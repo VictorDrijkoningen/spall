@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 import machine
 import ssd1306
 import time
@@ -8,14 +10,18 @@ with open(".env") as f:
         env = f.read().split(",")
 
 
-def update():
+def update(force_update = False):
     with open("VERSION") as file:
         spall_version = file.read()
         githubversion = requests.get(env[2]).text
-        if spall_version != githubversion:
-             with open('VERSION', 'w') as f:
+        if spall_version != githubversion or force_update:
+            with open('VERSION', 'w') as f:
                   f.write(githubversion)
-                  
+            with open('main.py', 'w') as f:
+                  f.write(requests.get(env[3]).text)
+            with open('boot.py', 'w') as f:
+                  f.write(requests.get(env[4]).text)
+            print('done updating')
     return spall_version, githubversion
 
 
