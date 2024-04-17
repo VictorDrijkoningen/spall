@@ -21,3 +21,5 @@ else:
     lan = network.WLAN(network.STA_IF)
     lan.active(True)
     lan.connect(env[0], env[1])
+    while not lan.isconnected():
+        pass
