@@ -1,57 +1,115 @@
 <html>
     <head> 
     </head>
-    <body> 
+    <body style="text-align: center;"> 
     
-        <h1>ESP Web Server</h1> 
-
-        <p><a href="/"><button class="button button2">OFF</button></a></p>
-        <div>
-
-            <p id="slider1value"></p>
-            <input onchange="slider1()" type="range" min="0" max="180" value="75" id="slider1">
-        </div>
-
-        <div>
-            <p id="slider2value"></p>
-            <input onchange="slider2()" type="range" min="0" max="180" value="75" id="slider2">
-        </div>
+       
 
 
-        <div id="joy1Div" style="width:200px;height:200px;margin-bottom:20px;"></div>
 
-        <script>
-            function slider1() {
-                var x = document.getElementById("slider1").value;
-                document.getElementById("slider1value").innerHTML = x;
-                var xhr = new XMLHttpRequest();
-                xhr.open("POST", '/action', true);
-                xhr.setRequestHeader('Content-Type', 'application/json');
-                xhr.send(JSON.stringify({
-                    'slider1': x
-                }));
-            }
-        </script>
+        <table>
+            <thead>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div style="text-align: center;">
+                            <p id="slider1value">90</p>
+                            <input onchange="slider1()" type="range" min="0" max="180" value="90" id="slider1">
+                        </div>
+                    </td>
+                    <td>
+                        <h3>ESP Web Server</h3>
+                        <div style="text-align: center;">
+                            <p><button onclick="offfunc()" class="button button2">OFF</button> <button onclick="onfunc()" class="button button2">ON</button></p>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="text-align: center;">
+                            <p id="slider2value">90</p>
+                            <input onchange="slider2()" type="range" min="0" max="180" value="90" id="slider2">
+                        </div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        <div style="background-color: grey; border-radius: 50px;">
+                            <div id="joy1Div" style="margin: auto; width:300px;height:300px;"></div>
+                        </div>
+                    </td>
+                    <td></td>
+                    <td>
+                        <div style="background-color: grey; border-radius: 50px;">
+                            <div id="joy2Div" style="margin: auto; width:300px;height:300px;"></div>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+            </table>
+
 
         <script src="joy.js"></script>
 
         <script type="text/javascript">
+            const socket = new WebSocket("ws://"+window.location.host+":80/websocket");
+
+            // Listen for messages
+            socket.addEventListener("message", (event) => {
+            console.log("Message from server ", event.data);
+            });
+
+
             var lastsend = window.performance.now()
             // Create JoyStick object into the DIV 'joyDiv'
             var Joy1 = new JoyStick('joy1Div', {}, async function(stickData) {
-                if (window.performance.now() > lastsend + 200){
-                    var xhr = new XMLHttpRequest();
-                    xhr.open("POST", '/action', true);
-                    xhr.setRequestHeader('Content-Type', 'application/json');
-                    xhr.send(JSON.stringify({
-                        'joy1x': stickData.xPosition
+                if (window.performance.now() > lastsend + 50){
+                    socket.send(JSON.stringify({
+                        'joy1x': stickData.xPosition,
+                        'joy1y': stickData.yPosition
+                    }));
+                    lastsend = window.performance.now();
+                }
+            });
+            var Joy2 = new JoyStick('joy2Div', {}, async function(stickData) {
+                if (window.performance.now() > lastsend + 50){
+                    socket.send(JSON.stringify({
+                        'joy2x': stickData.xPosition,
+                        'joy2y': stickData.yPosition
                     }));
                     lastsend = window.performance.now();
                 }
             });
 
-        
+            function slider1() {
+                var x = document.getElementById("slider1").value;
+                document.getElementById("slider1value").innerHTML = x;
 
+                socket.send(JSON.stringify({
+                    'slider1': x
+                }));
+            }
+
+            function slider2() {
+                var x = document.getElementById("slider2").value;
+                document.getElementById("slider2value").innerHTML = x;
+
+                socket.send(JSON.stringify({
+                    'slider2': x
+                }));
+            }
+
+
+            function offfunc() {
+                socket.send(JSON.stringify({
+                    'off': '_'
+                }));
+            }
+            function onfunc() {
+                socket.send(JSON.stringify({
+                    'on': '_'
+                }));
+            }
         </script>
 
     </body>
