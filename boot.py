@@ -7,6 +7,9 @@
 import network
 import webrepl
 import gc
+import esp
+
+esp.osdebug(0)
 
 gc.enable()
 
