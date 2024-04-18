@@ -4,9 +4,11 @@
 #import esp
 #esp.osdebug(None)
 
-
 import network
 import webrepl
+import gc
+
+gc.enable()
 
 webrepl.start()
 
@@ -25,3 +27,6 @@ else:
     lan.connect(env[0], env[1])
     while not lan.isconnected():
         pass
+
+
+gc.collect()
