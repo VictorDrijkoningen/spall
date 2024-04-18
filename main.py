@@ -4,8 +4,10 @@ import urequests as requests
 import time
 import uasyncio as asyncio
 import gc
-
+import json
 from microdot import Microdot, send_file
+from ws import with_websocket
+
 
 try:
     import ssd1306
@@ -34,49 +36,60 @@ def update(force_update = False):
 
 
 async def do_display():
+    return
+    i2c = machine.SoftI2C(sda=machine.Pin(22), scl=machine.Pin(21))
+    display = ssd1306.SSD1306_I2C(128,64, i2c)
+    display.text(fileversion.split("-")[0], 0,0,1)
+    display.show()
     while True:
-        display.text("-", 15,15,5)
+        x = 56
+        y = 32
+        display.text("-", x,y,1)
         display.show()
-        display.fill(0)
+        display.text("-", x,y,0)
         await asyncio.sleep(1.5)
-        display.text("\\", 15,15,1)
+        display.text("\\", x,y,1)
         display.show()
-        display.fill(0)
+        display.text("\\", x,y,0)
         await asyncio.sleep(1.5)
-        display.text("|", 15,15,1)
+        display.text("|", x,y,1)
         display.show()
-        display.fill(0)
+        display.text("|", x,y,0)
         await asyncio.sleep(1.5)
-        display.text("/", 15,15,1)
+        display.text("/", x,y,1)
         display.show()
-        display.fill(0)
+        display.text("/", x,y,0)
         await asyncio.sleep(1.5)
     
+def servos_on():
+    global steer_motor 
+    steer_motor = machine.PWM(machine.Pin(13))
+    steer_motor.freq(50)
+    steer_motor.duty(75)
 
+    global drive_motor
+    drive_motor = machine.PWM(machine.Pin(12))
+    drive_motor.freq(50)
+    drive_motor.duty(75)
+
+def servos_off():
+    drive_motor.deinit()
+    steer_motor.deinit()
 
 def servo(device, input, inpmin, inpmax):
     def mapFromTo(x,a,b,c,d):
         y=(x-a)/(b-a)*(d-c)+c
         return y
     input = max(inpmin, min(inpmax,int(input)))
-    device.duty(int(mapFromTo(input, inpmin, inpmax, 20, 130)))
+    try:
+        device.duty(int(mapFromTo(input, inpmin, inpmax, 20, 130)))
+    except:
+        print("Servo not on")
+
 
 
 fileversion = update()
-
-right_motor = machine.PWM(machine.Pin(13))
-right_motor.freq(50)
-
-i2c = machine.SoftI2C(sda=machine.Pin(22), scl=machine.Pin(21))
-display = ssd1306.SSD1306_I2C(128,64, i2c)
-display.text(fileversion.split("-")[0], 0,0,1)
-display.show()
-
-
-
-
-
-
+servos_on()
 
 app = Microdot()
 
@@ -97,17 +110,25 @@ async def shutdown(request):
     request.app.shutdown()
     return 'shutting down'
 
-@app.route('/action', methods=['POST'])
-async def action(request):
-    if 'slider1' in request.json.keys():
-        print(request.json['slider1'])
-        servo(right_motor, request.json['slider1'], 0, 180)
-    if 'joy1x' in request.json.keys():
-        print(request.json['joy1x'])
-        servo(right_motor, request.json['joy1x'], 50, 150)
-    return "200"
-
-
+@app.route('/websocket')
+@with_websocket
+async def websocket(request, ws):
+    while True:
+        message = await ws.receive()
+        print("ws: "+message)
+        try:
+            message = json.loads(message)
+            if 'joy1x' in message.keys():
+                servo(steer_motor, message['joy1x'], 75, 225)
+            if 'joy2y' in message.keys():
+                servo(drive_motor, message['joy2y'], 75, 225)
+            if 'on' in message.keys():
+                servos_on()
+            if 'off' in message.keys():
+                servos_off()
+        except ValueError:
+            print("malformed json")
+        await ws.send("rcvd")
 
 
 
@@ -122,6 +143,4 @@ async def main():
 def start():
     asyncio.run(main())
 
-
-
-
+start()
