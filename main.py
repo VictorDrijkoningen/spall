@@ -3,9 +3,9 @@ import machine
 import urequests as requests
 import time
 import uasyncio as asyncio
+import gc
 
-
-from microdot import Microdot
+from microdot import Microdot, send_file
 
 try:
     import ssd1306
@@ -35,36 +35,37 @@ def update(force_update = False):
 
 async def do_display():
     while True:
-        display.text("-", 15,15,2)
+        display.text("-", 15,15,5)
         display.show()
         display.fill(0)
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(1.5)
         display.text("\\", 15,15,1)
         display.show()
         display.fill(0)
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(1.5)
         display.text("|", 15,15,1)
         display.show()
         display.fill(0)
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(1.5)
         display.text("/", 15,15,1)
         display.show()
         display.fill(0)
-        await asyncio.sleep(0.1)
-        time.sleep(0.4)
+        await asyncio.sleep(1.5)
     
 
 
-def servo():
-    right_motor = machine.PWM(machine.Pin(13))
-    right_motor.freq(50)
-    right_motor.duty(300)
-    time.sleep(0.05)
-    right_motor.deinit()
+def servo(device, input, inpmin, inpmax):
+    def mapFromTo(x,a,b,c,d):
+        y=(x-a)/(b-a)*(d-c)+c
+        return y
+    input = max(inpmin, min(inpmax,int(input)))
+    device.duty(int(mapFromTo(input, inpmin, inpmax, 20, 130)))
 
 
 fileversion = update()
 
+right_motor = machine.PWM(machine.Pin(13))
+right_motor.freq(50)
 
 i2c = machine.SoftI2C(sda=machine.Pin(22), scl=machine.Pin(21))
 display = ssd1306.SSD1306_I2C(128,64, i2c)
@@ -79,113 +80,48 @@ display.show()
 
 app = Microdot()
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 async def index(request):
-    servo()
-    return 'Hello, world!'
+    return send_file('index.html')
+
+@app.route('/joy.js', methods=['GET'])
+async def index(request):
+    return send_file('joy.js')
+
+@app.route('/mem', methods=['GET'])
+async def index(request):
+    return str(gc.mem_alloc()) + " used, " +  str(gc.mem_free()) + " free"
+
+@app.route('/shutdown', methods=['GET'])
+async def shutdown(request):
+    request.app.shutdown()
+    return 'shutting down'
+
+@app.route('/action', methods=['POST'])
+async def action(request):
+    if 'slider1' in request.json.keys():
+        print(request.json['slider1'])
+        servo(right_motor, request.json['slider1'], 0, 180)
+    if 'joy1x' in request.json.keys():
+        print(request.json['joy1x'])
+        servo(right_motor, request.json['joy1x'], 50, 150)
+    return "200"
+
+
+
+
+
+
 
 async def webserver():
-    await app.start_server(debug=True,host='0.0.0.0', port=80)
+    await app.start_server(debug=False,host='0.0.0.0', port=80)
 
 async def main():
     await asyncio.gather(webserver(), do_display())
 
-asyncio.run(main())
-
-servo()
-
+def start():
+    asyncio.run(main())
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# def web_page():
-#     with open("index.html") as f:
-#         html = f.read()
-#     return html
-
-
-# async def webserver():
-#     try:
-#         webserver = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#         webserver.bind(('0.0.0.0', 80))
-#         webserver.listen(5)
-#         webserver.setblocking(False)
-#         webserver.settimeout(1)
-#         print("setup server")
-
-#         while True:
-#             try:
-#                 conn, addr = webserver.accept()
-#                 print('Got a connection from %s' % str(addr))
-#                 request = conn.recv(1024)
-#                 request = str(request)
-#                 print('Content = %s' % request)
-
-#                 try:
-#                     response = web_page()
-#                     conn.sendall(response)
-#                     conn.close()
-#                 except:
-#                     print("send exception")
-                
-#             except:
-#                  pass
-#             await asyncio.sleep(0.5)
-#             do_display()
-            
-
-#     except Exception as e:
-#         print(e)
-#     webserver.close()
-
-# async def handle_client(reader, writer):
-#     try:
-#         request = (await reader.read(255)).decode('utf8')
-#         response = web_page().encode('utf8')
-#         writer.write(header())
-#         writer.write(response)
-#         await writer.drain()
-#     except Exception as e:
-#         print(e)
-#     finally:
-#         writer.close()
-
-# async def run_server():
-#     server = await asyncio.start_server(handle_client, '0.0.0.0', 80)
-#     async with server:
-#         print("started server")
-#         await server.wait_closed()
-
-
-# async def main():
-#      await asyncio.gather(do_display(), run_server())
-
-# def start():
-#     asyncio.run(main())

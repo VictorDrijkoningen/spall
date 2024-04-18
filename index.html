@@ -1,0 +1,58 @@
+<html>
+    <head> 
+    </head>
+    <body> 
+    
+        <h1>ESP Web Server</h1> 
+
+        <p><a href="/"><button class="button button2">OFF</button></a></p>
+        <div>
+
+            <p id="slider1value"></p>
+            <input onchange="slider1()" type="range" min="0" max="180" value="75" id="slider1">
+        </div>
+
+        <div>
+            <p id="slider2value"></p>
+            <input onchange="slider2()" type="range" min="0" max="180" value="75" id="slider2">
+        </div>
+
+
+        <div id="joy1Div" style="width:200px;height:200px;margin-bottom:20px;"></div>
+
+        <script>
+            function slider1() {
+                var x = document.getElementById("slider1").value;
+                document.getElementById("slider1value").innerHTML = x;
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", '/action', true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.send(JSON.stringify({
+                    'slider1': x
+                }));
+            }
+        </script>
+
+        <script src="joy.js"></script>
+
+        <script type="text/javascript">
+            var lastsend = window.performance.now()
+            // Create JoyStick object into the DIV 'joyDiv'
+            var Joy1 = new JoyStick('joy1Div', {}, async function(stickData) {
+                if (window.performance.now() > lastsend + 200){
+                    var xhr = new XMLHttpRequest();
+                    xhr.open("POST", '/action', true);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    xhr.send(JSON.stringify({
+                        'joy1x': stickData.xPosition
+                    }));
+                    lastsend = window.performance.now();
+                }
+            });
+
+        
+
+        </script>
+
+    </body>
+</html>
