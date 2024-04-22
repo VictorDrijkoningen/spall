@@ -67,13 +67,13 @@ def servos_on():
     steer_motor.freq(50)
     steer_motor.duty(75)
 
-    global drive_motor
-    drive_motor = machine.PWM(machine.Pin(12))
-    drive_motor.freq(50)
-    drive_motor.duty(75)
+    # global drive_motor
+    # drive_motor = machine.PWM(machine.Pin(12))
+    # drive_motor.freq(50)
+    # drive_motor.duty(75)
 
 def servos_off():
-    drive_motor.deinit()
+    # drive_motor.deinit()
     steer_motor.deinit()
 
 def servo(device, input, inpmin, inpmax):
@@ -86,7 +86,28 @@ def servo(device, input, inpmin, inpmax):
     except:
         print("Servo not on")
 
+def drive(powerpercentage):
+    power = int((int(powerpercentage)/100) * 1023)
+    global frontdrivepin
+    global backdrivepin
 
+    if power < 0:
+        frontdrivepin.duty(0)
+        backdrivepin.duty(-power)
+    elif power > 0:
+        backdrivepin.duty(0)
+        frontdrivepin.duty(power)
+    else:
+        frontdrivepin.duty(0)
+        backdrivepin.duty(0)
+
+
+frontdrivepin = machine.PWM(machine.Pin(14))
+frontdrivepin.freq(50)
+frontdrivepin.duty(0)
+backdrivepin = machine.PWM(machine.Pin(27))
+backdrivepin.freq(50)
+backdrivepin.duty(0)
 
 fileversion = update()
 servos_on()
@@ -119,9 +140,9 @@ async def websocket(request, ws):
         try:
             message = json.loads(message)
             if 'joy1x' in message.keys():
-                servo(steer_motor, message['joy1x'], 75, 225)
+                servo(steer_motor, message['joy1x'], -100, 100)
             if 'joy2y' in message.keys():
-                servo(drive_motor, message['joy2y'], 75, 225)
+                drive(message['joy2y'])
             if 'on' in message.keys():
                 servos_on()
             if 'off' in message.keys():
