@@ -63,19 +63,19 @@
             var lastsend = window.performance.now()
             // Create JoyStick object into the DIV 'joyDiv'
             var Joy1 = new JoyStick('joy1Div', {}, async function(stickData) {
-                if (window.performance.now() > lastsend + 50){
+                if (window.performance.now() > lastsend + 50 || (stickData.x == 0 && stickData.y == 0)){
                     socket.send(JSON.stringify({
-                        'joy1x': stickData.xPosition,
-                        'joy1y': stickData.yPosition
+                        'joy1x': stickData.x,
+                        'joy1y': stickData.y
                     }));
                     lastsend = window.performance.now();
                 }
             });
             var Joy2 = new JoyStick('joy2Div', {}, async function(stickData) {
-                if (window.performance.now() > lastsend + 50){
+                if (window.performance.now() > lastsend + 50 || (stickData.x == 0 && stickData.y == 0)){
                     socket.send(JSON.stringify({
-                        'joy2x': stickData.xPosition,
-                        'joy2y': stickData.yPosition
+                        'joy2x': stickData.x,
+                        'joy2y': stickData.y
                     }));
                     lastsend = window.performance.now();
                 }
