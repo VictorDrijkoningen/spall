@@ -123,7 +123,7 @@ async def index(request):
     return send_file('joy.js')
 
 @app.route('/mem', methods=['GET'])
-async def index(request):
+async def mem(request):
     return str(gc.mem_alloc()) + " used, " +  str(gc.mem_free()) + " free"
 
 @app.route('/shutdown', methods=['GET'])
