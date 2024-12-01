@@ -14,6 +14,7 @@ try:
 except:
     import mip
     mip.install('ssd1306')
+    import ssd1306
 
 with open(".env") as f:
         env = f.read().split(",")
