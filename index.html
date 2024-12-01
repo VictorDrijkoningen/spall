@@ -47,11 +47,14 @@
         <script src="joy.js"></script>
 
         <script type="text/javascript">
-            const socket = new WebSocket("ws://"+window.location.host+":80/websocket");
+            var socket = new WebSocket("ws://"+window.location.host+":80/data");
+            var wsclosed = false;
+            const retrytime = 3000;
+            var lastretry = window.performance.now();
 
             // Listen for messages
             socket.addEventListener("message", (event) => {
-            console.log("Message from server ", event.data);
+                console.log("Message from server ", event.data);
             });
 
 
@@ -59,7 +62,7 @@
             // Create JoyStick object into the DIV 'joyDiv'
             var Joy1 = new JoyStick('joy1Div', {}, async function(stickData) {
                 if (window.performance.now() > lastsend + 50 || (stickData.x == 0 && stickData.y == 0)){
-                    socket.send(JSON.stringify({
+                    send_data(JSON.stringify({
                         'joy1x': stickData.x,
                         'joy1y': stickData.y
                     }));
@@ -68,7 +71,7 @@
             });
             var Joy2 = new JoyStick('joy2Div', {}, async function(stickData) {
                 if (window.performance.now() > lastsend + 50 || (stickData.x == 0 && stickData.y == 0)){
-                    socket.send(JSON.stringify({
+                    send_data(JSON.stringify({
                         'joy2x': stickData.x,
                         'joy2y': stickData.y
                     }));
@@ -80,7 +83,7 @@
                 var x = document.getElementById("slider1").value;
                 document.getElementById("slider1value").innerHTML = x;
 
-                socket.send(JSON.stringify({
+                send_data(JSON.stringify({
                     'slider1': x
                 }));
             }
@@ -89,21 +92,35 @@
                 var x = document.getElementById("slider2").value;
                 document.getElementById("slider2value").innerHTML = x;
 
-                socket.send(JSON.stringify({
+                send_data(JSON.stringify({
                     'slider2': x
                 }));
             }
 
 
             function offfunc() {
-                socket.send(JSON.stringify({
+                send_data(JSON.stringify({
                     'off': '_'
                 }));
             }
             function onfunc() {
-                socket.send(JSON.stringify({
+                send_data(JSON.stringify({
                     'on': '_'
                 }));
+            }
+
+            function send_data(data){
+                if (socket.readyState == 1){
+                    socket.send(data);
+                } else {
+                    console.log("not ready!", socket.readyState);
+
+                    if (window.performance.now()-lastretry > retrytime){
+                        console.log("making new connection");
+                        socket = new WebSocket("ws://"+window.location.host+":80/data");
+                        lastretry = window.performance.now();
+                    }
+                }
             }
         </script>
 
