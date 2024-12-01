@@ -103,12 +103,49 @@ def drive(powerpercentage):
         backdrivepin.duty(0)
 
 
-frontdrivepin = machine.PWM(machine.Pin(14))
-frontdrivepin.freq(50)
-frontdrivepin.duty(0)
-backdrivepin = machine.PWM(machine.Pin(27))
-backdrivepin.freq(50)
-backdrivepin.duty(0)
+def rdrive(powerpercentage):
+    power = int((int(powerpercentage)/100) * 1023)
+    global rfrontdrivepin
+    global rbackdrivepin
+
+    if power < 0:
+        rfrontdrivepin.duty(0)
+        rbackdrivepin.duty(-power)
+    elif power > 0:
+        rbackdrivepin.duty(0)
+        rfrontdrivepin.duty(power)
+    else:
+        rfrontdrivepin.duty(0)
+        rbackdrivepin.duty(0)
+
+def ldrive(powerpercentage):
+    power = int((int(powerpercentage)/100) * 1023)
+    global lfrontdrivepin
+    global lbackdrivepin
+
+    if power < 0:
+        lfrontdrivepin.duty(0)
+        lbackdrivepin.duty(-power)
+    elif power > 0:
+        lbackdrivepin.duty(0)
+        lfrontdrivepin.duty(power)
+    else:
+        lfrontdrivepin.duty(0)
+        lbackdrivepin.duty(0)
+
+rfrontdrivepin = machine.PWM(machine.Pin(14))
+rfrontdrivepin.freq(100)
+rfrontdrivepin.duty(0)
+rbackdrivepin = machine.PWM(machine.Pin(27))
+rbackdrivepin.freq(100)
+rbackdrivepin.duty(0)
+
+lfrontdrivepin = machine.PWM(machine.Pin(13))
+lfrontdrivepin.freq(100)
+lfrontdrivepin.duty(0)
+lbackdrivepin = machine.PWM(machine.Pin(12))
+lbackdrivepin.freq(100)
+lbackdrivepin.duty(0)
 
 fileversion = update()
 servos_on()
@@ -140,14 +177,14 @@ async def websocket(request, ws):
         print("ws: "+message)
         try:
             message = json.loads(message)
-            if 'joy1x' in message.keys():
-                servo(steer_motor, message['joy1x'], -100, 100)
+            if 'joy1y' in message.keys():
+                ldrive(message['joy1y'])
             if 'joy2y' in message.keys():
-                drive(message['joy2y'])
-            if 'on' in message.keys():
-                servos_on()
-            if 'off' in message.keys():
-                servos_off()
+                rdrive(message['joy2y'])
+            # if 'on' in message.keys():
+            #     servos_on()
+            # if 'off' in message.keys():
+            #     servos_off()
         except ValueError:
             print("malformed json")
         await ws.send("rcvd")
