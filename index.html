@@ -47,7 +47,7 @@
         <script src="joy.js"></script>
 
         <script type="text/javascript">
-            var socket = new WebSocket("ws://"+window.location.host+":80/data");
+            var socket = new WebSocket("ws://"+window.location.host+"/websocket");
             var wsclosed = false;
             const retrytime = 3000;
             var lastretry = window.performance.now();
@@ -117,7 +117,7 @@
 
                     if (window.performance.now()-lastretry > retrytime){
                         console.log("making new connection");
-                        socket = new WebSocket("ws://"+window.location.host+":80/data");
+                        socket = new WebSocket("ws://"+window.location.host+"/websocket");
                         lastretry = window.performance.now();
                     }
                 }
